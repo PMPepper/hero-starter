@@ -226,6 +226,8 @@ var moves = {
                 //is the remaining direction accessible?
                 if( possibleDirections[0].type === 'Unoccupied'){
                     return possibleDirections[0];
+                } else if(healthWellStats && gameData.activeHero.health < 100 && healthWellStats.distance == 1){
+                    return healthWellStats.direction;//I'm next to a health well and hurt, just heal
                 } else {
                     //last ditch desparation
                     return getWeakestAdjEnemyDirection( adjacentEnemies );
@@ -235,7 +237,7 @@ var moves = {
                 
                 if( healthWellStats && gameData.activeHero.health < 100 && healthWellStats.distance == 1){
                     return healthWellStats.direction;//I'm next to a health well and hurt, just heal
-                } else if( weakest.health == 10 ){//I can just kill one
+                } else if( weakest.health == 10 || (healthWellStats && healthWellStats.distance == 1) ){//I can just kill one OR if im next to a health well and unhurt, may as well attack
                     return adjTileDirection( weakest );
                 } else {
                     return healthWellStats.direction;//run to a health well
@@ -245,7 +247,10 @@ var moves = {
                     //move to them (and kill them!)
                     return adjTileDirection( adjacentEnemies[0] );
                 } else {
-                    //TODO take judgement call on if attacking is a good idea
+                    //take judgement call on if attacking is a good idea (enemy hasAttribute less health and is not next to health well)
+                    if(adjacentEnemies[0].health < myHero.health && getAdjacentTiles( adjacentEnemies[0].distanceFromLeft, adjacentEnemies[0].distanceFromTop, filters.healthWell ).length == 0 ){
+                        return adjTileDirection( adjacentEnemies[0] );
+                    }
                 }
                 break;
         }
@@ -259,6 +264,7 @@ var moves = {
         } else if( diamondMineStats && diamondMineStats.distance === 1 ){//if next to a diamond mine, grab it
             return diamondMineStats.direction;
         } else {
+            //TODO get much smarter here - e.g. if closer to a diamond mine go and grab that, if hurt teammate nearby go and heal them, etc. Dont attack enemies next to health wells
             // Otherwise, go attack someone...anyone.
             return helpers.findNearestEnemy(gameData);
         }
@@ -347,6 +353,9 @@ function getAdjacentTiles( x, y, filter ){
 var filters = {
     enemy:function( tile ){
         return tile.type === 'Hero' && tile.team !== myHero.team;
+    },
+    healthWell:function( tile ){
+        return tile.type === 'HealthWell';
     }
 };
 
